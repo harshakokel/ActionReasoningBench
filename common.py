@@ -3,7 +3,7 @@ import jsonlines
 import json
 
 CODE_PATH = os.path.dirname(os.path.realpath(__file__))
-PROJECT_PATH = os.path.dirname(CODE_PATH)
+PROJECT_PATH = os.path.dirname(CODE_PATH)+"/reasoning_about_actions"
 DATA_PATH = f'{PROJECT_PATH}/data'
 QUESTIONS_PATH = f'{DATA_PATH}/questions'
 STATES_ACTIONS_PATH = f'{DATA_PATH}/states_actions'

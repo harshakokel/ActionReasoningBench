@@ -4,10 +4,11 @@ import multiprocessing  # for multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
 
-from together_ai_common import *
+
+from open_ai_eval import *
 from analysis.model_performances import clean_response, EVALUATED_FREE_ANSWER_RESPONSE_KEY
 
-DEFAULT_MODEL = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo" #"meta-llama/Llama-3-70b-chat-hf"
+DEFAULT_MODEL = "meta-llama/llama-3-3-70b-instruct" #"meta-llama/Llama-3-70b-chat-hf"
 OUTPUT_TOKEN_LIMIT = 5000
 
 # de74b851-4128-4925-822f-ae293ebfea33
@@ -212,10 +213,10 @@ if __name__ == '__main__':
     # save_dir = f'./responses_rebuttal_evaluated'
     # massive_dump_dir = f'{save_dir}/{file_name}'
 
-    question_ids_file_name = 'test_data.paraphrased.cleaned'
+    question_ids_file_name = 'prompts/questions/test'
     prompt_type = FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
     ramification = WITHOUT_RAMIFICATIONS
-    model = 'llama_8b' #'gpt-4o' #'llama_70b' 'llama_8b''llama_70b' #'llama_8b.finetuned_free' #
+    model = 'meta-llama/llama-4-scout-17b-16e' #'gpt-4o' #'llama_70b' 'llama_8b''llama_70b' #'llama_8b.finetuned_free' #
     save_dir = f'{PROJECT_PATH}/data/free_answers/{ramification}/{prompt_type}'
     massive_dump_dir = f'{save_dir}/{model}'
     os.makedirs(massive_dump_dir, exist_ok=True)

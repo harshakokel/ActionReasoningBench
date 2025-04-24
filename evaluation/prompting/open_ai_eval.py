@@ -3,17 +3,20 @@ import concurrent.futures  # for multithreading
 import multiprocessing  # for multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
+import os 
 
-import openai
+from openai import OpenAI
+client = OpenAI( api_key=os.getenv("RITS_API_KEY"),
+    base_url="http://0.0.0.0:4000")
 from prompts import *
 
 
 OUTPUT_TOKEN_LIMIT = 4096
 
 def get_output(prompt, model, max_tokens, temp=0):
-    output = openai.ChatCompletion.create(
-    model=model,
-    messages=[
+    output = client.chat.completions.create(
+        model=f"rits/{model}",
+        messages=[
         {"role": "user", "content": prompt}
     ],
     temperature=temp,
@@ -36,7 +39,7 @@ def api_call(prompt, model, max_tokens, num_tries = 10):
             num_tries = 0
         except Exception as e:
             print(e)
-            backoff_time = get_backoff_time(str(e))
+            backoff_time = 60
             print(f"Backing off for {backoff_time} seconds. Number of tries left: {num_tries}")
             time.sleep(backoff_time)
             num_tries -= 1
@@ -57,10 +60,8 @@ def process_data(data_d, paraphrased_ids, massive_dump_dir, model):
 
 
 if __name__ == '__main__':
-    with open('openai.api.key') as f:
-        openai.api_key = f.read()
 
-    model = 'gpt-4o'
+    model = "meta-llama/llama-4-scout-17b-16e"
     prompt_type = FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
     ramification = WITHOUT_RAMIFICATIONS
     save_dir = f'{PROJECT_PATH}/data/prompting_results/{ramification}/{prompt_type}'
