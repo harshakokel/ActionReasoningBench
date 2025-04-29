@@ -4,6 +4,7 @@ import multiprocessing  # for multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
 import os 
+import argparse
 
 from openai import OpenAI
 client = OpenAI( api_key=os.getenv("RITS_API_KEY"),
@@ -61,9 +62,15 @@ def process_data(data_d, paraphrased_ids, massive_dump_dir, model):
 
 if __name__ == '__main__':
 
-    model = "meta-llama/llama-4-scout-17b-16e"
-    prompt_type = FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
-    ramification = WITHOUT_RAMIFICATIONS
+    parser = argparse.ArgumentParser(description="Run evaluation with specified parameters.")
+    parser.add_argument('--model', type=str, required=True, help="The model to use for evaluation.")
+    parser.add_argument('--prompt_type', type=str, required=False, default="few_shot_3", help="The type of prompt to use (e.g., few_shot_3).")
+    parser.add_argument('--ramification', type=str, required=False, default="without_ramifications", help="The ramification type (e.g., WITHOUT_RAMIFICATIONS).")
+    args = parser.parse_args()
+    
+    model = args.model
+    prompt_type = args.prompt_type #ZERO_SHOT_PROMPT_KEY
+    ramification = args.ramification
     save_dir = f'{PROJECT_PATH}/data/prompting_results/{ramification}/{prompt_type}'
     massive_dump_dir = f'{save_dir}/{model}'
     os.makedirs(massive_dump_dir, exist_ok=True)

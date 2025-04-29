@@ -7,10 +7,7 @@ from tqdm import tqdm
 from collections import defaultdict
 import sys
 
-# import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-# from torch.utils.data import DataLoader
-# from datasets import Dataset
+import argparse
 
 sys.path.insert(0, '../../')
 from questions_construction.main import QUESTION_CATEGORIES
@@ -657,28 +654,42 @@ def calculate_stats_single_run(data_all, answer_response_type, ramification, sub
 
 
 if __name__ == '__main__':
-    questions_by_id = {d[OUT_OBJ_ID]: d for d in open_jsonl(f'{DATA_PATH}/test_data.paraphrased.cleaned.jsonl')}
+    
+    parser = argparse.ArgumentParser(description="Run evaluation with specified parameters.")
+    parser.add_argument('--model', type=str, required=True, help="The model to use for evaluation.")
+    parser.add_argument('--prompt_type', type=str, required=False, default="few_shot_3", help="The type of prompt to use (e.g., few_shot_3).")
+    parser.add_argument('--ramification', type=str, required=False, default="without_ramifications", help="The ramification type (e.g., WITHOUT_RAMIFICATIONS).")
+    args = parser.parse_args()
+    
+    questions_by_id = {d[OUT_OBJ_ID]: d for d in open_jsonl(f'{DATA_PATH}/prompts/questions/test.jsonl')}
     override = True
-    answer_response_type = f'{FREE_ANSWER_TYPE}.{ACCURACY_SCORE_KEY}' #f'{TRUE_FALSE_ANSWER_TYPE}.{ACCURACY_SCORE_KEY}' #
+     
+    answer_response_type = f'{TRUE_FALSE_ANSWER_TYPE}.{ACCURACY_SCORE_KEY}' 
     stats_save_dir = f'{STATISTICS_PATH}.trial_run.ED'
 
-    model_name = 'llama_8b' #'gpt-4o' #'llama_8b.finetuned_free' #'llama_8b.finetuned_tf' #'llama_8b.finetuned_free' #'llama_70b'#
+    model_name = args.model # 'meta-llama/llama-4-scout-17b-16e' #'gpt-4o' #'llama_8b.finetuned_free' #'llama_8b.finetuned_tf' #'llama_8b.finetuned_free' #'llama_70b'#
 
     substitution = WITHOUT_RANDOM_SUB
-    ramification = WITHOUT_RAMIFICATIONS
-    prompt_type = FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
+    ramification = args.ramification #WITHOUT_RAMIFICATIONS
+    prompt_type = args.prompt_type #FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
 
-    if answer_response_type.split('.')[0] == TRUE_FALSE_ANSWER_TYPE:
-        model_results_dir = f'{PROJECT_PATH}/data/prompting_results/{ramification}/{prompt_type}/{model_name}.jsonl'
-        model_results = open_jsonl(model_results_dir)
-        data_all = data_all_single_run(questions_by_id, model_results, substitution, ramification, model_name,prompt_type)
-    elif answer_response_type.split('.')[0] == FREE_ANSWER_TYPE:
-        save_dir = f'{PROJECT_PATH}/data/free_answers/{ramification}/{prompt_type}'
-        model_results = open_jsonl(os.path.join(save_dir, f'{model_name}.jsonl'))
-        data_all = data_all_single_run(questions_by_id, model_results, substitution, ramification, model_name,
-                                       prompt_type)
-    else:
-        raise ValueError(f"Unknown answer_response_type {answer_response_type}")
+# Log Bool Answers
+
+    model_results_dir = f'{PROJECT_PATH}/data/prompting_results/{ramification}/{prompt_type}/{model_name}.jsonl'
+    model_results = open_jsonl(model_results_dir)
+    data_all = data_all_single_run(questions_by_id, model_results, substitution, ramification, model_name,prompt_type)
+    calculate_stats_single_run(data_all, answer_response_type, ramification, substitution, model_name, prompt_type, stats_save_dir, override)
+    
+    
+# Log Free Answer
+
+    answer_response_type = f'{FREE_ANSWER_TYPE}.{ACCURACY_SCORE_KEY}'
+    save_dir = f'{PROJECT_PATH}/data/free_answers/{ramification}/{prompt_type}'
+    model_results = open_jsonl(os.path.join(save_dir, f'{model_name}.jsonl'))
+    data_all = data_all_single_run(questions_by_id, model_results, substitution, ramification, model_name,
+                                    prompt_type)
+    # else:
+    #     raise ValueError(f"Unknown answer_response_type {answer_response_type}")
 
     calculate_stats_single_run(data_all, answer_response_type, ramification, substitution, model_name, prompt_type, stats_save_dir, override)
 

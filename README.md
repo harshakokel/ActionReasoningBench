@@ -34,3 +34,25 @@ To get started with this project, follow the steps below:
 3. **Download Data/Models**:
    
    Data and models are available at [gdrive](https://drive.google.com/drive/folders/1v8yhRmd2IhLLNpiJhoh4fyiaKEcaI9_B?usp=sharing)
+
+4. **Generate Responses**
+
+   ```bash
+   export PYTHONPATH=./
+   export RITS_API_KEY=xxx
+   python ./evaluation/prompting/open_ai_eval.py --model <model-name>
+   ```
+
+5. Evaluate Free Answers  (default `--judge-model "meta-llama/llama-3-3-70b-instruct"`)
+
+   ```bash
+   export PYTHONPATH=./
+   export RITS_API_KEY=xxx
+   python ./evaluation/prompting/free_answers_evaluation.py  --model <model-name> 
+   ```
+
+6. Print Stats of Model Performances 
+
+```bash
+python analysis/model_performances.py --model <model-name> 
+```

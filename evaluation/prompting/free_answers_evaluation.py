@@ -3,7 +3,7 @@ import concurrent.futures  # for multithreading
 import multiprocessing  # for multiprocessing
 import matplotlib.pyplot as plt
 import numpy as np
-
+import argparse
 
 from open_ai_eval import *
 from analysis.model_performances import clean_response, EVALUATED_FREE_ANSWER_RESPONSE_KEY
@@ -197,19 +197,20 @@ def process_data(data_d, free_answers_completed_ids, massive_dump_dir):
 
 
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser()
-    # args = parser.parse_args()
-
-    # #TODO rm
-    # file_name = 'template_data_10_pct_gpt-4o'
-    # input_file_path = f'./responses_rebuttal/{file_name}.jsonl'
-    # save_dir = f'./responses_rebuttal_evaluated'
-    # massive_dump_dir = f'{save_dir}/{file_name}'
+    parser = argparse.ArgumentParser(description="Run evaluation with specified parameters.")
+    parser.add_argument('--model', type=str, required=True, help="The model to use for evaluation.")
+    parser.add_argument('--judge-model', type=str, required=False, help="Judge model to use for evaluation.", default="meta-llama/llama-3-3-70b-instruct")
+    parser.add_argument('--prompt_type', type=str, required=False, default="few_shot_3", help="The type of prompt to use (e.g., few_shot_3).")
+    parser.add_argument('--ramification', type=str, required=False, default="without_ramifications", help="The ramification type (e.g., WITHOUT_RAMIFICATIONS).")
+    args = parser.parse_args()
 
     question_ids_file_name = 'prompts/questions/test'
-    prompt_type = FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
-    ramification = WITHOUT_RAMIFICATIONS
-    model = 'meta-llama/llama-4-scout-17b-16e' #'gpt-4o' #'llama_70b' 'llama_8b''llama_70b' #'llama_8b.finetuned_free' #
+    prompt_type =args.prompt_type # FEW_SHOT_3_PROMPT_KEY #ZERO_SHOT_PROMPT_KEY
+    ramification = args.ramification # WITHOUT_RAMIFICATIONS
+    model = args.model # 'ibm-granite/granite-3.3-8b-instruct' #'gpt-4o' #'llama_70b' 'llama_8b''llama_70b' #'llama_8b.finetuned_free' #
+    DEFAULT_MODEL=args.judge_model
+    
+    
     save_dir = f'{PROJECT_PATH}/data/free_answers/{ramification}/{prompt_type}'
     massive_dump_dir = f'{save_dir}/{model}'
     os.makedirs(massive_dump_dir, exist_ok=True)
