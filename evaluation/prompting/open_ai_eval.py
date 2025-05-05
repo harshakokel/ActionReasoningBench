@@ -8,8 +8,10 @@ import argparse
 import time
 
 from openai import OpenAI
-client = OpenAI( api_key=os.getenv("RITS_API_KEY"),
-    base_url="http://0.0.0.0:4000")
+client = OpenAI( api_key="Not needed",
+    base_url=os.getenv("RITS_BASE_URL", "xxx/v1"), #model inference endpoint and then /v1
+    default_headers={"RITS_API_KEY":  os.getenv("RITS_API_KEY","xxx")} # API Key
+    )
 from prompts import *
 
 
@@ -17,7 +19,7 @@ OUTPUT_TOKEN_LIMIT = 4096
 
 def get_output(prompt, model, max_tokens, temp=0):
     output = client.chat.completions.create(
-        model=f"rits/{model}",
+        model=model,
         messages=[
         {"role": "user", "content": prompt}
     ],
