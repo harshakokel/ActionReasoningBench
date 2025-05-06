@@ -3,7 +3,7 @@ from tqdm import tqdm
 import json
 from pathlib import Path
 import argparse
-
+from prompts import *
 
 def get_response(text, tokenizer, context_length, model):
     '''
@@ -48,12 +48,13 @@ def parse_args():
     '''
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--model', type=str, required=True, help='Model name')
-    parser.add_argument('-f', '--file', type=str, required=True, help='Input file path')
-    parser.add_argument('-o', '--output', type=str, required=True, help='Output file path')
+    parser.add_argument('--prompt_type', type=str, required=False, default="few_shot_3", help="The type of prompt to use (e.g., few_shot_3).")
+    parser.add_argument('--ramification', type=str, required=False, default="without_ramifications", help="The ramification type (e.g., WITHOUT_RAMIFICATIONS).")
     parser.add_argument('-c', '--context', type=int, required=True, help='Context length')
     parser.add_argument('-d', '--huggingface_cache_dir', type=str, required=False, help='Huggingface cache directory')
-    parser.add_argument('-t', '--huggingface_token', type=str, required=True, help='Huggingface token')
+    parser.add_argument('-t', '--huggingface_token', type=str, required=False, help='Huggingface token')
     parser.add_argument('-i', '--index', type=int, required=False, help='Starting zero-index for evaluation')
+    parser.add_argument('-p', '--peft', type=str, required=False, help='PEFT model path name')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -63,32 +64,42 @@ if __name__ == '__main__':
     # Loading the tokenizer and model
     tokenizer = AutoTokenizer.from_pretrained(
         args.model,
-        cache_dir = args.huggingface_cache_dir,
-        token = args.huggingface_token,
+        #cache_dir = args.huggingface_cache_dir,
+        #token = args.huggingface_token,
         trust_remote_code = True
     )
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
         device_map = 'auto',
-        cache_dir = args.huggingface_cache_dir,
-        token = args.huggingface_token,
+        #cache_dir = args.huggingface_cache_dir,
+        #token = args.huggingface_token,
         trust_remote_code = True
     )
-
-    # Reading the instance
-    with open(args.file, 'r') as f:
-        if args.index:
-            data = [json.loads(jline) for jline in f.readlines()][args.index:]
-        else:
-            data = [json.loads(jline) for jline in f.readlines()]
+    model_dir = args.model.replace("/","-")
+    if args.peft is not None:
+        from peft import PeftModel, PeftConfig
+        model = PeftModel.from_pretrained(model, args.peft)
+        model_dir += "_"+ args.peft.replace("/","-")
+    save_dir = f'{PROJECT_PATH}/data/prompting_results/{args.ramification}/{args.prompt_type}'
+    massive_dump_dir = f'{save_dir}/{model_dir}'
+    os.makedirs(massive_dump_dir, exist_ok=True)
     
-    # Creating the directory where the files will be saved
-    dir_path = '/'.join(args.output.split('/')[:-1])
-    Path(dir_path).mkdir(parents=True, exist_ok=True)
+    computed_ids = set([f.strip('.json') for f in os.listdir(massive_dump_dir) if f.endswith('.json')])
+    print(len(computed_ids))
+    
+    prompt_data = open_jsonl(f'{PROJECT_PATH}/data/prompts/{args.prompt_type}.jsonl')
 
-    with tqdm(total=len(data)) as pbar:
-        for idx, ele in enumerate(data):
-            response = get_response(ele['prompt'], tokenizer, args.context, model)
-            ele['response'] = response
-            write_response(ele, args.output)
+    chosen_data = [d for d in prompt_data if d[OUT_OBJ_ID] not in computed_ids]
+
+    
+
+    with tqdm(total=len(chosen_data)) as pbar:
+        for idx, ele in enumerate(chosen_data):
+            response = get_response(ele[PROMPT_KEY], tokenizer, args.context, model)
+            ele[MODEL_RESPONSE_KEY] = response
+            with open(f'{massive_dump_dir}/{ele[OUT_OBJ_ID]}.json', 'w') as f:
+                json.dump(ele, f)
             pbar.update(1)
+
+    collected_data = [open_json(f'{massive_dump_dir}/{f}') for f in os.listdir(massive_dump_dir) if f.endswith('.json')]
+    save_jsonl(collected_data, f'{save_dir}/{model_dir}.jsonl')
